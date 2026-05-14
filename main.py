@@ -98,6 +98,9 @@ async def on_message(message):
             )
 
             reply = response.choices[0].message.content
+            # Strip [name]: prefix if model adds it
+            if "]: " in reply:
+                reply = reply.split("]: ", 1)[-1]
             add_to_history(memory, "assistant", reply)
 
             if len(reply) > 2000:
