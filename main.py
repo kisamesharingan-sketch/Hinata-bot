@@ -87,7 +87,7 @@ async def on_ready():
     members = load_members()
     for guild in client.guilds:
         for member in guild.members:
-            if not member.bot:
+            if True  # include bots:
                 members[member.name.lower()] = member.id
                 members[member.display_name.lower()] = member.id
     save_members(members)
