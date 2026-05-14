@@ -93,21 +93,12 @@ async def on_message(message):
 
     display_name = "Onii-chan" if is_oniichan else message.author.name
 
-    # Build a mention map of server members
-    mention_map = ""
-    if hasattr(message.guild, 'members'):
-        members = {m.display_name.lower(): m.id for m in message.guild.members if not m.bot}
-        mention_map = "Server members you can tag: " + ", ".join([f"{name} (ID:{uid})" for name, uid in list(members.items())[:30]])
-
     add_to_history(memory, "user", f"[{display_name}]: {user_message}")
 
     async with message.channel.typing():
         try:
-            system = get_system_prompt(is_oniichan)
-            if mention_map:
-                system += f"\n\n{mention_map}"
             messages_with_system = [
-                {"role": "system", "content": system}
+                {"role": "system", "content": get_system_prompt(is_oniichan)}
             ] + memory["history"]
 
             response = groq_client.chat.completions.create(
