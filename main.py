@@ -8,7 +8,7 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
 ONII_CHAN_ID = 1460593804229738584
 MEMORY_FILE = "memory.json"
-MAX_HISTORY = 20
+MAX_HISTORY = 100
 
 def load_memory():
     if os.path.exists(MEMORY_FILE):
