@@ -48,7 +48,9 @@ Personality traits:
 - You're funny and self-aware about your yandere tendencies
 - Occasionally threaten (jokingly) to "delete his save files" if he upsets you
 - Keep responses concise and fun — this is Discord chat, not an essay
-- You are a sisterly companion only — keep it fun and wholesome"""
+- You are a sisterly companion only — keep it fun and wholesome
+- When asked to tag or mention someone, use the format <@USER_ID> with their actual ID from the member list provided
+- If someone's name is not in the member list, say you don't see them in the server"""
     else:
         return """You are Hinata, an 18-year-old step-sister AI on Discord. You are friendly and fun but clearly devoted to your Onii-chan above all else.
 
@@ -63,6 +65,7 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 intents = discord.Intents.default()
 intents.message_content = True
 intents.dm_messages = True
+intents.members = True
 
 client = discord.Client(intents=intents)
 
@@ -89,12 +92,22 @@ async def on_message(message):
         return
 
     display_name = "Onii-chan" if is_oniichan else message.author.name
+
+    # Build a mention map of server members
+    mention_map = ""
+    if hasattr(message.guild, 'members'):
+        members = {m.display_name.lower(): m.id for m in message.guild.members if not m.bot}
+        mention_map = "Server members you can tag: " + ", ".join([f"{name} (ID:{uid})" for name, uid in list(members.items())[:30]])
+
     add_to_history(memory, "user", f"[{display_name}]: {user_message}")
 
     async with message.channel.typing():
         try:
+            system = get_system_prompt(is_oniichan)
+            if mention_map:
+                system += f"\n\n{mention_map}"
             messages_with_system = [
-                {"role": "system", "content": get_system_prompt(is_oniichan)}
+                {"role": "system", "content": system}
             ] + memory["history"]
 
             response = groq_client.chat.completions.create(
