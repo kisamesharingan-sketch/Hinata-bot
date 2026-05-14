@@ -20,6 +20,16 @@ def save_memory(memory):
     with open(MEMORY_FILE, "w") as f:
         json.dump(memory, f, indent=2)
 
+def load_members():
+    if os.path.exists("members.json"):
+        with open("members.json", "r") as f:
+            return json.load(f)
+    return {}
+
+def save_members(members):
+    with open("members.json", "w") as f:
+        json.dump(members, f, indent=2)
+
 def add_to_history(memory, role, content):
     memory["history"].append({"role": role, "content": content})
     if len(memory["history"]) > MAX_HISTORY:
@@ -73,6 +83,27 @@ client = discord.Client(intents=intents)
 async def on_ready():
     print(f"✅ Hinata is online as {client.user}!")
     await client.change_presence(activity=discord.Game("watching anime with Onii-chan 🌸"))
+    # Scan all existing members on startup
+    members = load_members()
+    for guild in client.guilds:
+        for member in guild.members:
+            if not member.bot:
+                members[member.name.lower()] = member.id
+                members[member.display_name.lower()] = member.id
+    save_members(members)
+    print(f"📝 Saved {len(members)} members!")
+
+@client.event
+async def on_member_join(member):
+    members = load_members()
+    members[member.name.lower()] = member.id
+    members[member.display_name.lower()] = member.id
+    save_members(members)
+    print(f"📝 Saved member: {member.name} ({member.id})")
+
+@client.event
+async def on_ready():
+    pass
 
 @client.event
 async def on_message(message):
@@ -97,8 +128,13 @@ async def on_message(message):
 
     async with message.channel.typing():
         try:
+            members = load_members()
+            member_list = ", ".join([f"{name}: <@{uid}>" for name, uid in list(members.items())[:50]])
+            system = get_system_prompt(is_oniichan)
+            if member_list:
+                system += f"\n\nKnown server members you can tag: {member_list}"
             messages_with_system = [
-                {"role": "system", "content": get_system_prompt(is_oniichan)}
+                {"role": "system", "content": system}
             ] + memory["history"]
 
             response = groq_client.chat.completions.create(
